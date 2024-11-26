@@ -412,21 +412,22 @@ class CarEnv(gymnasium.Env):
 
 
         # Lane change progress reward
-        reward += lane_change_progress * 3
-        if abs(steer) > 0.3:
-            reward -= 3  
+        #reward += lane_change_progress * 3
+        if abs(steer) > 0.5:
+            reward -= 30
 
         # Distance to exit reward
         if distance_to_exit < self.initial_exit_distance:
-            reward += 5
+            reward += 150
         if distance_to_exit > self.initial_exit_distance:
-            reward -= 5
+            reward -= 150
 
         # Collision penalty
         if len(self.collision_hist) != 0:
             reward -= 300
 
         return reward
+
 
     def _check_episode_end(self, distance_to_exit):
         done = False
