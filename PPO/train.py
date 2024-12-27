@@ -1,7 +1,7 @@
 from stable_baselines3 import PPO #PPO
 from typing import Callable
 import os
-from carenv import CarEnv
+from PPO.carenv import CarEnv
 import time
 
 

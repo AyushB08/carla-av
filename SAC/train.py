@@ -1,6 +1,6 @@
 from stable_baselines3 import SAC
 import os
-from carenv import CarEnv
+from PPO.carenv import CarEnv
 import time
 import torch
 print(torch.cuda.is_available())  # Should return True if GPU is available
