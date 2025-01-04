@@ -37,12 +37,18 @@ class CarEnv(gymnasium.Env):
         self.blueprint_library = self.world.get_blueprint_library()
         self.vehicle = None
         self.camera = None
+        self.traffic_manager = self.client.get_trafficmanager(8000)
+        self.traffic_vehicles = []
 
     def reset(self):
         if self.vehicle:
             self.vehicle.destroy()
         if self.camera:
             self.camera.destroy()
+
+        for traffic_vehicle in self.traffic_vehicles:
+            traffic_vehicle.destroy()
+        self.traffic_vehicles = []
 
         # Spawn the vehicle
         blueprint = self.blueprint_library.filter('vehicle.*')[0]
@@ -62,6 +68,8 @@ class CarEnv(gymnasium.Env):
         self.front_camera = None
         while self.front_camera is None:
             time.sleep(0.01)
+
+        self.spawn_traffic()
 
         return self.front_camera
 
@@ -130,6 +138,24 @@ class CarEnv(gymnasium.Env):
         # Placeholder logic: return True if a lane change was performed
         return random.choice([True, False])
 
+    def spawn_traffic(self):
+        """Spawn realistic traffic in the environment."""
+        spawn_points = self.world.get_map().get_spawn_points()
+        num_traffic_vehicles = min(len(spawn_points), 20)  # Limit to 20 traffic vehicles
+
+        vehicle_blueprints = self.blueprint_library.filter('vehicle.*')
+
+        for _ in range(num_traffic_vehicles):
+            spawn_point = random.choice(spawn_points)
+            vehicle_blueprint = random.choice(vehicle_blueprints)
+            traffic_vehicle = self.world.try_spawn_actor(vehicle_blueprint, spawn_point)
+
+            if traffic_vehicle:
+                self.traffic_vehicles.append(traffic_vehicle)
+                self.traffic_manager.ignore_lights_percentage(traffic_vehicle, random.uniform(0, 100))
+                self.traffic_manager.auto_lane_change(traffic_vehicle, True)
+                self.traffic_manager.set_global_distance_to_leading_vehicle(random.uniform(1.0, 3.0))
+
     def render(self, mode='human'):
         if mode == 'human' and self.SHOW_CAM and self.front_camera is not None:
             cv2.imshow("Front Camera", self.front_camera)
@@ -140,6 +166,11 @@ class CarEnv(gymnasium.Env):
             self.vehicle.destroy()
         if self.camera:
             self.camera.destroy()
+
+        for traffic_vehicle in self.traffic_vehicles:
+            traffic_vehicle.destroy()
+
+        self.traffic_vehicles = []
         cv2.destroyAllWindows()
 
     def spawn_vehicles(self, location_type="highway_exit", num_vehicles=5):
@@ -168,4 +199,3 @@ class CarEnv(gymnasium.Env):
                 spawn_point = random.choice(spawn_points)
                 vehicle_blueprint = random.choice(vehicle_blueprints)
                 self.world.try_spawn_actor(vehicle_blueprint, spawn_point)
-
